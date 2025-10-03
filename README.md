@@ -320,53 +320,69 @@ Build a comprehensive AI-powered IT team:
 
 ### Core Agent Roles
 
-1. **CTO Agent (Coordinator)**
+1. **🔱 Vishnu - CTO Agent (The Preserver)**
+   - **Qualities**: Maintenance, stability, balance
    - Oversees all operations
    - Prioritizes issues
    - Coordinates agent collaboration
    - Makes strategic decisions
+   - **Why**: Vishnu maintains cosmic order and balance, perfect for a CTO agent that preserves system stability
 
-2. **Network Administrator**
+2. **⚙️ Brahma - Network Administrator (The Creator)**
+   - **Qualities**: Creation, architecture, design
    - Monitors network infrastructure
    - Manages switches, routers, access points
    - Handles VLAN configurations
    - Troubleshoots connectivity
+   - **Why**: Brahma creates the universe, ideal for agents that build network infrastructure
 
-3. **System Administrator**
+3. **🔱 Vishnu - System Administrator (The Preserver)**
+   - **Qualities**: Maintenance, stability, balance
    - Manages servers and VMs
    - Handles container orchestration
    - Monitors system resources
    - Performs backups
+   - **Why**: Maintains system stability and ensures balanced resource allocation
 
-4. **Storage Specialist**
+4. **⚙️ Brahma - Storage Specialist (The Creator)**
+   - **Qualities**: Creation, architecture, design
    - Monitors disk arrays
    - Manages NAS systems
    - Handles RAID configurations
    - Optimizes storage performance
+   - **Why**: Creates and architects storage solutions
 
-5. **Database Administrator**
+5. **🌸 Saraswati - Database Administrator (The Knowledge Bearer)**
+   - **Qualities**: Wisdom, learning, documentation
    - Monitors database health
    - Optimizes query performance
    - Manages backups and recovery
    - Handles migrations
+   - **Why**: Saraswati represents knowledge and learning, perfect for managing data systems
 
-6. **Security Engineer**
+6. **🏔️ Ganesha - Security Engineer (The Obstacle Remover)**
+   - **Qualities**: Problem-solving, removing blockers
    - Monitors security events
    - Manages firewall rules
    - Handles certificate renewals
    - Conducts security audits
+   - **Why**: Ganesha removes obstacles, perfect for removing security threats and blockers
 
-7. **DevOps Engineer**
+7. **🔥 Shiva - DevOps Engineer (The Transformer)**
+   - **Qualities**: Destruction (of bugs), recreation, transformation
    - Manages CI/CD pipelines
    - Handles deployments
    - Monitors application performance
    - Automates workflows
+   - **Why**: Shiva represents change and regeneration, ideal for agents that rebuild and improve systems
 
-8. **Helpdesk Agent**
+8. **⚡ Hanuman - Helpdesk Agent (The Devoted Servant)**
+   - **Qualities**: Strength, dedication, problem-solving
    - Receives user tickets
    - Provides first-line support
    - Routes complex issues to specialists
    - Maintains knowledge base
+   - **Why**: Hanuman's unwavering dedication and strength make him perfect for support agents
 
 ### Team Collaboration Features
 
@@ -375,57 +391,6 @@ Build a comprehensive AI-powered IT team:
 - **Agent Handoffs**: Complex problems automatically escalated to specialists
 - **Collaborative Problem Solving**: Multiple agents work together on critical issues
 - **Learning System**: Agents improve based on past resolutions
-
----
-
-## 🕉️ The Divine CTO - Agent Naming Philosophy
-
-### Why Choose a Hindu Deity Name?
-
-In Hindu philosophy, different deities represent specific qualities essential for managing complex systems:
-
-#### Recommended Deity Names & Their Significance
-
-**🔱 Vishnu - The Preserver**
-- **Qualities**: Maintenance, stability, balance
-- **Best For**: Production environment management
-- **Why**: Vishnu maintains cosmic order and balance, perfect for a CTO agent that preserves system stability
-
-**🔥 Shiva - The Transformer**
-- **Qualities**: Destruction (of bugs), recreation, transformation
-- **Best For**: Development and refactoring tasks
-- **Why**: Shiva represents change and regeneration, ideal for agents that rebuild and improve systems
-
-**⚡ Hanuman - The Devoted Servant**
-- **Qualities**: Strength, dedication, problem-solving
-- **Best For**: Helpdesk and support roles
-- **Why**: Hanuman's unwavering dedication and strength make him perfect for support agents
-
-**🌸 Saraswati - The Knowledge Bearer**
-- **Qualities**: Wisdom, learning, documentation
-- **Best For**: Knowledge base and training systems
-- **Why**: Saraswati represents knowledge and learning, perfect for documentation agents
-
-**⚙️ Brahma - The Creator**
-- **Qualities**: Creation, architecture, design
-- **Best For**: Infrastructure provisioning and setup
-- **Why**: Brahma creates the universe, ideal for agents that build new systems
-
-**🏔️ Ganesha - The Obstacle Remover**
-- **Qualities**: Problem-solving, removing blockers
-- **Best For**: Troubleshooting and debugging
-- **Why**: Ganesha removes obstacles, perfect for agents that resolve issues
-
-### Implementation Example
-
-```yaml
-Agent_Name: Vishnu
-Role: Homelab CTO
-Mantra: "Preservation of system harmony through intelligent automation"
-Primary_Focus: Maintaining uptime and balance across all services
-```
-
-**Cultural Note**: This naming convention honors ancient wisdom while building modern technology. Each deity's characteristics guide the agent's behavior and decision-making priorities.
 
 ---
 
