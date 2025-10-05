@@ -1,0 +1,12 @@
+{
+  "name": "Approval Handler - Human-in-the-Loop",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {},
+  "tags": [],
+  "meta": {
+    "description": "Sub-workflow for Human-in-the-Loop Approval Logic",
+    "templateCredsSetupCompleted": true
+  }
+}
