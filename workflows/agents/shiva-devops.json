@@ -1,0 +1,12 @@
+{
+  "name": "Shiva DevOps Agent",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {},
+  "tags": [],
+  "meta": {
+    "description": "Workflow for the Shiva DevOps Agent",
+    "templateCredsSetupCompleted": true
+  }
+}

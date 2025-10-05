@@ -1,0 +1,12 @@
+{
+  "name": "Vishnu CTO Agent - Orchestration",
+  "nodes": [],
+  "connections": {},
+  "active": false,
+  "settings": {},
+  "tags": [],
+  "meta": {
+    "description": "Workflow for the Vishnu CTO Agent (Orchestration)",
+    "templateCredsSetupCompleted": true
+  }
+}
