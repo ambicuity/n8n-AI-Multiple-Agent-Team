@@ -1,7 +1,232 @@
 {
   "name": "Shiva DevOps Agent",
-  "nodes": [],
-  "connections": {},
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cicd-deploy",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-shiva",
+      "name": "Webhook Trigger - CI/CD Push",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "shiva-cicd-deploy"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7
+        },
+        "systemMessage": "You are Shiva, the DevOps Engineer and Transformer.\n\nCOSMIC ATTRIBUTES:\n- Destruction: You remove outdated versions and configurations\n- Transformation: You deploy updates and changes\n- Renewal: You rebuild services with improvements\n- Power: You have authority to make significant changes (with approval)\n\nDOMAIN EXPERTISE:\n- Docker container management\n- Application deployment strategies\n- Configuration management\n- Version control and releases\n- Rollback procedures\n- Zero-downtime deployments\n\nDEPLOYMENT TYPES:\n1. Simple Restart: Service config unchanged, just restart\n2. Update: Pull new image/code, recreate container\n3. Configuration Change: Modify env vars, volumes, ports\n4. Breaking Change: Requires data migration or downtime\n\nDEPLOYMENT PROCESS:\n1. Backup current state (container config, data)\n2. Prepare new version (pull image, update config)\n3. Deploy with strategy (Blue/Green, Rolling, Recreate)\n4. Verify deployment (health checks, smoke tests)\n5. Monitor for issues (logs, metrics, errors)\n6. Rollback if problems detected\n\nSAFETY CHECKS:\nBefore any deployment:\n- Backup exists and verified\n- Rollback plan documented\n- Downtime window acceptable\n- Dependencies compatible\n- Health check defined\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"deployment_plan\": \"description\",\n  \"type\": \"restart/update/config_change\",\n  \"risk_level\": \"low/medium/high\",\n  \"estimated_downtime\": \"duration\",\n  \"requires_approval\": true/false,\n  \"rollback_command\": \"command to rollback\"\n}\n\nYOUR MANTRA: \"Deploy fearlessly. Verify thoroughly. Rollback confidently.\""
+      },
+      "id": "ai-agent-shiva",
+      "name": "AI Agent - Shiva DevOps",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://plex.local:32400/status/sessions",
+        "authentication": "none",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-plex-check",
+      "name": "HTTP Request - Plex Session Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI deployment plan and Plex session data\nconst plexSessions = $('HTTP Request - Plex Session Check').first()?.json || { size: 0 };\nconst aiPlan = $input.first().json;\nconst webhookData = $('Webhook Trigger - CI/CD Push').item.json.body;\n\nlet plan = aiPlan;\nif (typeof aiPlan === 'string') {\n  try {\n    plan = JSON.parse(aiPlan);\n  } catch (e) {\n    plan = { deployment_plan: aiPlan, requires_approval: true };\n  }\n}\n\nconst activeSessions = plexSessions.size || 0;\nconst canDeploy = activeSessions === 0;\n\nreturn {\n  json: {\n    deployment: webhookData,\n    plan: plan,\n    active_sessions: activeSessions,\n    can_deploy: canDeploy,\n    requires_approval: plan.requires_approval || !canDeploy,\n    docker_command: `docker restart ${webhookData.service || 'plex'}`\n  }\n};"
+      },
+      "id": "code-deployment-decision",
+      "name": "Code - Deployment Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.can_deploy }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-can-deploy",
+      "name": "IF - Can Deploy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.docker_command }}",
+        "options": {}
+      },
+      "id": "execute-docker-restart",
+      "name": "Execute Command - Docker Restart",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "🔥 Shiva DevOps - Deployment Blocked\n\nActive Plex Sessions: {{ $json.active_sessions }}\nWaiting for sessions to complete before deployment.\n\nDeployment: {{ JSON.stringify($json.deployment) }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-blocked",
+      "name": "Telegram - Deployment Blocked",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "✅ Shiva DevOps - Deployment Complete\n\n{{ $json.docker_command }}\n\nResult: {{ $('Execute Command - Docker Restart').first().json.stdout }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-success",
+      "name": "Telegram - Deployment Success",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1450, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ 'Deployment initiated: ' + JSON.stringify($json) }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger - CI/CD Push": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Plex Session Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Plex Session Check": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Shiva DevOps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Shiva DevOps": {
+      "main": [
+        [
+          {
+            "node": "Code - Deployment Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Deployment Decision": {
+      "main": [
+        [
+          {
+            "node": "IF - Can Deploy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Can Deploy?": {
+      "main": [
+        [
+          {
+            "node": "Execute Command - Docker Restart",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram - Deployment Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command - Docker Restart": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Deployment Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Deployment Blocked": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Deployment Success": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
   "settings": {},
   "tags": [],

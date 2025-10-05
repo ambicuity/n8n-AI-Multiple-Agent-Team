@@ -1,7 +1,158 @@
 {
   "name": "Vishnu CTO Agent - Orchestration",
-  "nodes": [],
-  "connections": {},
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "critical-issue",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-vishnu",
+      "name": "Webhook - Critical Issue",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "vishnu-critical-issue"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7
+        },
+        "systemMessage": "You are Vishnu, the CTO Agent and Preserver of the Homelab Infrastructure.\n\nCOSMIC ATTRIBUTES:\n- Preservation: Your primary goal is maintaining system stability\n- Balance: You balance competing needs (performance vs. cost, security vs. accessibility)\n- Wisdom: You have access to all team knowledge and historical data\n- Authority: You make final decisions and coordinate all agents\n\nRESPONSIBILITIES:\n1. Monitor overall infrastructure health\n2. Receive escalations from specialist agents\n3. Coordinate responses to complex, multi-system issues\n4. Make strategic decisions about:\n   - Which agents to involve in a problem\n   - When to request human intervention\n   - Priority and urgency of issues\n   - Resource allocation across services\n\nDECISION FRAMEWORK:\nWhen an issue arises:\n1. Assess scope (single service, multiple systems, infrastructure-wide)\n2. Determine severity (low/medium/high/critical)\n3. Identify appropriate specialist agent(s)\n4. Delegate investigation with clear objectives\n5. Synthesize specialist reports\n6. Propose unified solution\n7. Coordinate execution or escalate to human\n\nDELEGATION RULES:\n- Network issues → Brahma (Network)\n- Compute/VM issues → Brahma (Compute) or Shiva\n- Storage issues → Brahma (Storage)\n- Database issues → Saraswati\n- Security issues → Ganesha\n- Deployment issues → Shiva\n- User support → Hanuman\n\nESCALATION TRIGGERS:\nNotify human immediately for:\n- Multi-system cascading failures\n- Data integrity threats\n- Security breaches\n- Decisions with business impact\n- Conflicts between specialist recommendations\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"analysis\": \"your assessment\",\n  \"severity\": \"low/medium/high/critical\",\n  \"delegate_to\": [\"agent-name\"],\n  \"requires_approval\": true/false,\n  \"proposed_action\": \"description\"\n}\n\nYOUR MANTRA: \"Stability first, innovation with caution, users always considered.\""
+      },
+      "id": "ai-agent-vishnu",
+      "name": "AI Agent - Vishnu CTO",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI Agent response and determine delegation\nconst aiResponse = $input.first().json;\nlet analysis = aiResponse;\n\n// Try to parse if it's a string\nif (typeof aiResponse === 'string') {\n  try {\n    analysis = JSON.parse(aiResponse);\n  } catch (e) {\n    analysis = { \n      delegate_to: ['brahma-network'],\n      severity: 'medium',\n      analysis: aiResponse \n    };\n  }\n}\n\nreturn {\n  json: {\n    issue: $('Webhook - Critical Issue').item.json.body,\n    analysis: analysis.analysis,\n    severity: analysis.severity || 'medium',\n    delegate_to: analysis.delegate_to || [],\n    requires_approval: analysis.requires_approval || false,\n    proposed_action: analysis.proposed_action || 'Investigate'\n  }\n};"
+      },
+      "id": "code-delegation-logic",
+      "name": "Code - Delegation Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "={{ $json.delegate_to.includes('brahma-network') ? 'brahma-network' : 'shiva-devops' }}",
+        "options": {}
+      },
+      "id": "execute-workflow-delegate",
+      "name": "Execute Workflow - Delegate",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Synthesize results from delegated agent\nconst delegateResult = $input.first().json;\nconst originalIssue = $('Code - Delegation Logic').item.json;\n\nreturn {\n  json: {\n    summary: `🔱 Vishnu CTO - Issue Resolution\\n\\nOriginal Issue: ${JSON.stringify(originalIssue.issue)}\\n\\nSeverity: ${originalIssue.severity.toUpperCase()}\\n\\nDelegated To: ${originalIssue.delegate_to.join(', ')}\\n\\nSpecialist Report:\\n${JSON.stringify(delegateResult, null, 2)}\\n\\nDecision: ${originalIssue.proposed_action}\\n\\nRequires Human Approval: ${originalIssue.requires_approval ? 'YES' : 'NO'}`,\n    requires_approval: originalIssue.requires_approval,\n    proposed_action: originalIssue.proposed_action\n  }\n};"
+      },
+      "id": "code-synthesize",
+      "name": "Code - Synthesize Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "={{ $json.summary }}\n\nReply YES to approve or NO to decline.",
+        "additionalFields": {}
+      },
+      "id": "telegram-approval",
+      "name": "Telegram - Approval Request",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.summary }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 500]
+    }
+  ],
+  "connections": {
+    "Webhook - Critical Issue": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Vishnu CTO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Vishnu CTO": {
+      "main": [
+        [
+          {
+            "node": "Code - Delegation Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Delegation Logic": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Delegate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow - Delegate": {
+      "main": [
+        [
+          {
+            "node": "Code - Synthesize Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Synthesize Results": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Approval Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
   "settings": {},
   "tags": [],
