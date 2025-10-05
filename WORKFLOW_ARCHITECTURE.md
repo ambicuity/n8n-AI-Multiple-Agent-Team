@@ -300,13 +300,19 @@ n8n-AI-Multiple-Agent-Team/
 │       ├── vishnu-cto.json       # 7 nodes, orchestration
 │       ├── brahma-network.json   # 6 nodes, monitoring
 │       ├── shiva-devops.json     # 9 nodes, deployment
+│       ├── saraswati-database.json # 6 nodes, database
+│       ├── ganesha-security.json # 7 nodes, security
+│       ├── hanuman-helpdesk.json # 8 nodes, support
 │       └── approval-handler.json # 7 nodes, approval
 │
 ├── workflows/
 │   ├── agents/
 │   │   ├── vishnu-cto.json
 │   │   ├── brahma-network.json
-│   │   └── shiva-devops.json
+│   │   ├── shiva-devops.json
+│   │   ├── saraswati-database.json
+│   │   ├── ganesha-security.json
+│   │   └── hanuman-helpdesk.json
 │   └── utilities/
 │       └── approval-handler.json
 │

@@ -7,12 +7,19 @@ This repository contains complete, executable n8n workflow JSON files for a mult
 ## Files Included
 
 ### Main Export File
-- **`workflows-export.json`** - Single JSON file containing all 4 workflows in the required format with a `files` array
+- **`workflows-export.json`** - Single JSON file containing all 7 workflows in the required format with a `files` array
 
 ### Individual Workflow Files
-- **`workflows/agents/vishnu-cto.json`** - CTO Orchestrator Agent
-- **`workflows/agents/brahma-network.json`** - Network Administrator Agent
-- **`workflows/agents/shiva-devops.json`** - DevOps Engineer Agent
+
+**AI Agent Workflows:**
+- **`workflows/agents/vishnu-cto.json`** - CTO Orchestrator Agent (Preservation)
+- **`workflows/agents/brahma-network.json`** - Network Administrator Agent (Creation)
+- **`workflows/agents/shiva-devops.json`** - DevOps Engineer Agent (Transformation)
+- **`workflows/agents/saraswati-database.json`** - Database Administrator Agent (Knowledge)
+- **`workflows/agents/ganesha-security.json`** - Security Engineer Agent (Problem-Solving)
+- **`workflows/agents/hanuman-helpdesk.json`** - Helpdesk Support Agent (Service)
+
+**Utility Workflows:**
 - **`workflows/utilities/approval-handler.json`** - Human-in-the-Loop Approval Handler
 
 ## Workflow Details
@@ -83,7 +90,76 @@ This repository contains complete, executable n8n workflow JSON files for a mult
 - Conditional execution based on system state
 - Notifications for success/blocked deployments
 
-### 4. Approval Handler (approval-handler.json)
+### 4. Saraswati Database Agent (saraswati-database.json)
+
+**Role:** Database Administrator and Knowledge Keeper  
+**Trigger:** Schedule (Every 30 minutes)  
+**Version:** 1.0
+
+**Nodes:**
+- Schedule Trigger - Every 30 min
+- HTTP Request - Database Status (checks `http://postgres.local:5432`)
+- Execute Command - Query Analysis (PostgreSQL diagnostics)
+- Code - Combine Database Data
+- AI Agent - Saraswati Database (analyzes results)
+- Telegram - Database Report (sends notifications)
+
+**Key Features:**
+- Scheduled database monitoring every 30 minutes
+- Database health checks via HTTP
+- Query performance analysis
+- Slow query detection
+- AI-powered optimization recommendations
+- Reports via Telegram
+
+### 5. Ganesha Security Agent (ganesha-security.json)
+
+**Role:** Security Engineer and Obstacle Remover  
+**Trigger:** Schedule (Every 10 minutes)  
+**Version:** 1.0
+
+**Nodes:**
+- Schedule Trigger - Every 10 min
+- Execute Command - Auth Logs (checks failed login attempts)
+- Execute Command - Fail2ban Status
+- Execute Command - Certificate Check (SSL/TLS expiration)
+- Code - Combine Security Data
+- AI Agent - Ganesha Security (threat analysis)
+- Telegram - Security Report (sends alerts)
+
+**Key Features:**
+- Frequent security monitoring every 10 minutes
+- Authentication log analysis
+- Fail2ban status monitoring
+- Certificate expiration tracking
+- AI-powered threat assessment
+- Immediate alerts for security incidents
+
+### 6. Hanuman Helpdesk Agent (hanuman-helpdesk.json)
+
+**Role:** Helpdesk Agent and Devoted Servant  
+**Trigger:** Telegram (on message)  
+**Version:** 1.0
+
+**Nodes:**
+- Telegram Trigger - User Requests
+- Code - Parse User Request (categorization)
+- AI Agent - Hanuman Helpdesk (triage and response)
+- Code - Process Response
+- IF - Should Escalate?
+- Telegram - Direct Response
+- Telegram - Escalation Notice
+- Execute Workflow - Escalate to Vishnu
+
+**Key Features:**
+- Real-time user support via Telegram
+- Intelligent request categorization
+- AI-powered triage and troubleshooting
+- Automatic escalation to specialist agents
+- Friendly, empathetic communication
+- User satisfaction tracking
+
+### 7. Approval Handler (approval-handler.json)
 
 **Role:** Utility Workflow for Human-in-the-Loop  
 **Trigger:** Telegram (on message)  
@@ -142,7 +218,7 @@ Update these placeholder URLs to match your environment:
 5. Configure credentials and environment variables
 6. Activate the workflow
 
-Repeat for all 4 workflows.
+Repeat for all 7 workflows.
 
 ### Method 2: Programmatic Import
 
@@ -150,7 +226,7 @@ Use the main export file with the n8n API or bulk import tool:
 
 ```bash
 # Example using the workflows-export.json structure
-# This file contains all 4 workflows in a single JSON with 'files' array
+# This file contains all 7 workflows in a single JSON with 'files' array
 cat workflows-export.json | jq -r '.files[] | @json' | while read workflow; do
   echo "$workflow" | n8n import:workflow --input=-
 done
@@ -316,8 +392,11 @@ For issues or questions:
 
 ## Version History
 
-- **v1.0** - Initial implementation with all 4 core workflows
-  - Vishnu CTO Agent (Orchestrator)
-  - Brahma Network Agent (Infrastructure)
-  - Shiva DevOps Agent (Deployment)
+- **v1.0** - Initial implementation with all 6 AI agent workflows + 1 utility
+  - Vishnu CTO Agent (Orchestrator - Preservation)
+  - Brahma Network Agent (Infrastructure - Creation)
+  - Shiva DevOps Agent (Deployment - Transformation)
+  - Saraswati Database Agent (Data - Knowledge)
+  - Ganesha Security Agent (Protection - Problem-Solving)
+  - Hanuman Helpdesk Agent (Support - Service)
   - Approval Handler (Human-in-the-Loop)
