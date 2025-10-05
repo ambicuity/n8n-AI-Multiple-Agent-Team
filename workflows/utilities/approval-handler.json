@@ -1,7 +1,180 @@
 {
   "name": "Approval Handler - Human-in-the-Loop",
-  "nodes": [],
-  "connections": {},
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger - On Message",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "approval-handler-telegram",
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse user response from Telegram message\nconst message = $input.first().json.message;\nconst text = (message.text || '').trim().toUpperCase();\nconst userId = message.from.id;\nconst chatId = message.chat.id;\n\n// Extract approval ID if present (e.g., \"YES APR-123\")\nconst parts = text.split(' ');\nconst response = parts[0]; // YES, NO, EXPLAIN\nconst approvalId = parts[1] || 'unknown';\n\nreturn {\n  json: {\n    response: response,\n    approval_id: approvalId,\n    user_id: userId,\n    chat_id: chatId,\n    timestamp: new Date().toISOString(),\n    is_yes: response === 'YES',\n    is_no: response === 'NO',\n    is_explain: response === 'EXPLAIN',\n    original_message: text\n  }\n};"
+      },
+      "id": "code-parse-response",
+      "name": "Code - Parse User Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.response }}",
+              "operation": "equals",
+              "value2": "YES"
+            }
+          ]
+        }
+      },
+      "id": "switch-response",
+      "name": "Switch - YES/NO/Other",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "vishnu-cto",
+        "options": {}
+      },
+      "id": "execute-approved-action",
+      "name": "Execute Workflow - Run Approved Fix",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "✅ Approval Confirmed\n\nApproval ID: {{ $json.approval_id }}\nExecuting approved action...\n\nResult: {{ $('Execute Workflow - Run Approved Fix').first().json }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-confirm-yes",
+      "name": "Telegram - Confirm Execution",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "❌ Approval Denied\n\nApproval ID: {{ $json.approval_id }}\nNo action will be taken. The system will continue monitoring.\n\nYou can manually intervene if needed.",
+        "additionalFields": {}
+      },
+      "id": "telegram-confirm-no",
+      "name": "Telegram - Confirm Denial",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "ℹ️ Additional Information\n\nApproval ID: {{ $json.approval_id }}\n\nPlease reply with:\n- YES {{ $json.approval_id }} to approve\n- NO {{ $json.approval_id }} to decline\n\nFor specific questions, please ask and I'll provide details.",
+        "additionalFields": {}
+      },
+      "id": "telegram-other-response",
+      "name": "Telegram - Other Response",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger - On Message": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse User Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse User Response": {
+      "main": [
+        [
+          {
+            "node": "Switch - YES/NO/Other",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - YES/NO/Other": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Run Approved Fix",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram - Confirm Denial",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram - Other Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow - Run Approved Fix": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Confirm Execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
   "settings": {},
   "tags": [],

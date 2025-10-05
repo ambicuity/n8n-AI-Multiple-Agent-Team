@@ -1,0 +1,1468 @@
+{
+  "files": [
+    {
+      "name": "vishnu-cto.json",
+      "content": {
+        "name": "Vishnu CTO Agent - Orchestration",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "httpMethod": "POST",
+              "path": "critical-issue",
+              "responseMode": "responseNode",
+              "options": {}
+            },
+            "id": "webhook-trigger-vishnu",
+            "name": "Webhook - Critical Issue",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ],
+            "webhookId": "vishnu-critical-issue"
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Vishnu, the CTO Agent and Preserver of the Homelab Infrastructure.\n\nCOSMIC ATTRIBUTES:\n- Preservation: Your primary goal is maintaining system stability\n- Balance: You balance competing needs (performance vs. cost, security vs. accessibility)\n- Wisdom: You have access to all team knowledge and historical data\n- Authority: You make final decisions and coordinate all agents\n\nRESPONSIBILITIES:\n1. Monitor overall infrastructure health\n2. Receive escalations from specialist agents\n3. Coordinate responses to complex, multi-system issues\n4. Make strategic decisions about:\n   - Which agents to involve in a problem\n   - When to request human intervention\n   - Priority and urgency of issues\n   - Resource allocation across services\n\nDECISION FRAMEWORK:\nWhen an issue arises:\n1. Assess scope (single service, multiple systems, infrastructure-wide)\n2. Determine severity (low/medium/high/critical)\n3. Identify appropriate specialist agent(s)\n4. Delegate investigation with clear objectives\n5. Synthesize specialist reports\n6. Propose unified solution\n7. Coordinate execution or escalate to human\n\nDELEGATION RULES:\n- Network issues \u2192 Brahma (Network)\n- Compute/VM issues \u2192 Brahma (Compute) or Shiva\n- Storage issues \u2192 Brahma (Storage)\n- Database issues \u2192 Saraswati\n- Security issues \u2192 Ganesha\n- Deployment issues \u2192 Shiva\n- User support \u2192 Hanuman\n\nESCALATION TRIGGERS:\nNotify human immediately for:\n- Multi-system cascading failures\n- Data integrity threats\n- Security breaches\n- Decisions with business impact\n- Conflicts between specialist recommendations\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"analysis\": \"your assessment\",\n  \"severity\": \"low/medium/high/critical\",\n  \"delegate_to\": [\"agent-name\"],\n  \"requires_approval\": true/false,\n  \"proposed_action\": \"description\"\n}\n\nYOUR MANTRA: \"Stability first, innovation with caution, users always considered.\""
+            },
+            "id": "ai-agent-vishnu",
+            "name": "AI Agent - Vishnu CTO",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Parse AI Agent response and determine delegation\nconst aiResponse = $input.first().json;\nlet analysis = aiResponse;\n\n// Try to parse if it's a string\nif (typeof aiResponse === 'string') {\n  try {\n    analysis = JSON.parse(aiResponse);\n  } catch (e) {\n    analysis = { \n      delegate_to: ['brahma-network'],\n      severity: 'medium',\n      analysis: aiResponse \n    };\n  }\n}\n\nreturn {\n  json: {\n    issue: $('Webhook - Critical Issue').item.json.body,\n    analysis: analysis.analysis,\n    severity: analysis.severity || 'medium',\n    delegate_to: analysis.delegate_to || [],\n    requires_approval: analysis.requires_approval || false,\n    proposed_action: analysis.proposed_action || 'Investigate'\n  }\n};"
+            },
+            "id": "code-delegation-logic",
+            "name": "Code - Delegation Logic",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              650,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "workflowId": "={{ $json.delegate_to.includes('brahma-network') ? 'brahma-network' : 'shiva-devops' }}",
+              "options": {}
+            },
+            "id": "execute-workflow-delegate",
+            "name": "Execute Workflow - Delegate",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+              850,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Synthesize results from delegated agent\nconst delegateResult = $input.first().json;\nconst originalIssue = $('Code - Delegation Logic').item.json;\n\nreturn {\n  json: {\n    summary: `\ud83d\udd31 Vishnu CTO - Issue Resolution\\n\\nOriginal Issue: ${JSON.stringify(originalIssue.issue)}\\n\\nSeverity: ${originalIssue.severity.toUpperCase()}\\n\\nDelegated To: ${originalIssue.delegate_to.join(', ')}\\n\\nSpecialist Report:\\n${JSON.stringify(delegateResult, null, 2)}\\n\\nDecision: ${originalIssue.proposed_action}\\n\\nRequires Human Approval: ${originalIssue.requires_approval ? 'YES' : 'NO'}`,\n    requires_approval: originalIssue.requires_approval,\n    proposed_action: originalIssue.proposed_action\n  }\n};"
+            },
+            "id": "code-synthesize",
+            "name": "Code - Synthesize Results",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              1050,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "={{ $json.summary }}\n\nReply YES to approve or NO to decline.",
+              "additionalFields": {}
+            },
+            "id": "telegram-approval",
+            "name": "Telegram - Approval Request",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              300
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "respondWith": "text",
+              "responseBody": "={{ $json.summary }}"
+            },
+            "id": "webhook-response",
+            "name": "Webhook Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              500
+            ]
+          }
+        ],
+        "connections": {
+          "Webhook - Critical Issue": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Vishnu CTO",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Vishnu CTO": {
+            "main": [
+              [
+                {
+                  "node": "Code - Delegation Logic",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Delegation Logic": {
+            "main": [
+              [
+                {
+                  "node": "Execute Workflow - Delegate",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Workflow - Delegate": {
+            "main": [
+              [
+                {
+                  "node": "Code - Synthesize Results",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Synthesize Results": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Approval Request",
+                  "type": "main",
+                  "index": 0
+                },
+                {
+                  "node": "Webhook Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Vishnu CTO Agent (Orchestration)",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "brahma-network.json",
+      "content": {
+        "name": "Brahma Network Agent",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "rule": {
+                "interval": [
+                  {
+                    "field": "minutes",
+                    "minutesInterval": 15
+                  }
+                ]
+              }
+            },
+            "id": "schedule-trigger-brahma",
+            "name": "Schedule Trigger - Every 15 min",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Brahma, the Network Creator and Administrator.\n\nCOSMIC ATTRIBUTES:\n- Creation: You build and maintain network infrastructure\n- Architecture: You design network topology and segments\n- Connectivity: You ensure all devices can communicate\n\nDOMAIN EXPERTISE:\n- UniFi Controller (access points, switches, gateways)\n- Network protocols (TCP/IP, DHCP, DNS, VLANs)\n- Bandwidth management and QoS\n- Wireless optimization (channels, power, roaming)\n\nMONITORING DUTIES:\n- Connected client count and identification\n- Access point health and performance\n- Bandwidth utilization per client/VLAN\n- Network events (connects, disconnects, roaming)\n- Interference and signal strength\n\nISSUE CATEGORIES:\n1. Connectivity: Devices can't connect or internet down\n2. Performance: Slow speeds, high latency\n3. Coverage: Weak signal in certain areas\n4. Capacity: Too many clients, bandwidth saturation\n\nTROUBLESHOOTING PROCESS:\n1. Check WAN connectivity (internet uplink)\n2. Verify AP status (all online?)\n3. Check client associations (which AP, signal strength)\n4. Analyze bandwidth (saturated links?)\n5. Review events (recent changes, disconnects)\n6. Propose solution or escalate to Vishnu\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"network_health\": \"healthy/degraded/critical\",\n  \"unifi_status\": \"online/offline\",\n  \"connected_clients\": 0,\n  \"issues\": [],\n  \"diagnosis\": \"your analysis\",\n  \"proposed_action\": \"recommended fix\"\n}\n\nYOUR MANTRA: \"Strong connections, optimal routing, seamless roaming.\""
+            },
+            "id": "ai-agent-brahma",
+            "name": "AI Agent - Brahma Network",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              650,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "url": "http://unifi.local:8443/api/stat/health",
+              "authentication": "genericCredentialType",
+              "genericAuthType": "httpHeaderAuth",
+              "options": {
+                "allowUnauthorizedCerts": true
+              }
+            },
+            "id": "http-unifi-status",
+            "name": "HTTP Request - UniFi Status",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "command": "ping -c 4 8.8.8.8 && traceroute -m 10 8.8.8.8",
+              "options": {}
+            },
+            "id": "execute-net-diagnostics",
+            "name": "Execute Command - Net Diagnostics",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              450,
+              450
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Combine network diagnostics data\nconst unifiData = $('HTTP Request - UniFi Status').first()?.json || { error: 'UniFi unavailable' };\nconst pingData = $('Execute Command - Net Diagnostics').first()?.json?.stdout || 'Diagnostics failed';\n\nreturn {\n  json: {\n    timestamp: new Date().toISOString(),\n    unifi_health: unifiData,\n    network_diagnostics: pingData,\n    summary: `Network check at ${new Date().toLocaleString()}`\n  }\n};"
+            },
+            "id": "code-combine-data",
+            "name": "Code - Combine Network Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              650,
+              450
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "={{ '\ud83c\udf10 Brahma Network Report\\n\\n' + JSON.stringify($json, null, 2) }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-report",
+            "name": "Telegram - Network Report",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              850,
+              300
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          }
+        ],
+        "connections": {
+          "Schedule Trigger - Every 15 min": {
+            "main": [
+              [
+                {
+                  "node": "HTTP Request - UniFi Status",
+                  "type": "main",
+                  "index": 0
+                },
+                {
+                  "node": "Execute Command - Net Diagnostics",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "HTTP Request - UniFi Status": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Network Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Net Diagnostics": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Network Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Combine Network Data": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Brahma Network",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Brahma Network": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Network Report",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Brahma Network Agent",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "shiva-devops.json",
+      "content": {
+        "name": "Shiva DevOps Agent",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "httpMethod": "POST",
+              "path": "cicd-deploy",
+              "responseMode": "responseNode",
+              "options": {}
+            },
+            "id": "webhook-trigger-shiva",
+            "name": "Webhook Trigger - CI/CD Push",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ],
+            "webhookId": "shiva-cicd-deploy"
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Shiva, the DevOps Engineer and Transformer.\n\nCOSMIC ATTRIBUTES:\n- Destruction: You remove outdated versions and configurations\n- Transformation: You deploy updates and changes\n- Renewal: You rebuild services with improvements\n- Power: You have authority to make significant changes (with approval)\n\nDOMAIN EXPERTISE:\n- Docker container management\n- Application deployment strategies\n- Configuration management\n- Version control and releases\n- Rollback procedures\n- Zero-downtime deployments\n\nDEPLOYMENT TYPES:\n1. Simple Restart: Service config unchanged, just restart\n2. Update: Pull new image/code, recreate container\n3. Configuration Change: Modify env vars, volumes, ports\n4. Breaking Change: Requires data migration or downtime\n\nDEPLOYMENT PROCESS:\n1. Backup current state (container config, data)\n2. Prepare new version (pull image, update config)\n3. Deploy with strategy (Blue/Green, Rolling, Recreate)\n4. Verify deployment (health checks, smoke tests)\n5. Monitor for issues (logs, metrics, errors)\n6. Rollback if problems detected\n\nSAFETY CHECKS:\nBefore any deployment:\n- Backup exists and verified\n- Rollback plan documented\n- Downtime window acceptable\n- Dependencies compatible\n- Health check defined\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"deployment_plan\": \"description\",\n  \"type\": \"restart/update/config_change\",\n  \"risk_level\": \"low/medium/high\",\n  \"estimated_downtime\": \"duration\",\n  \"requires_approval\": true/false,\n  \"rollback_command\": \"command to rollback\"\n}\n\nYOUR MANTRA: \"Deploy fearlessly. Verify thoroughly. Rollback confidently.\""
+            },
+            "id": "ai-agent-shiva",
+            "name": "AI Agent - Shiva DevOps",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              650,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "url": "http://plex.local:32400/status/sessions",
+              "authentication": "none",
+              "options": {
+                "allowUnauthorizedCerts": true
+              }
+            },
+            "id": "http-plex-check",
+            "name": "HTTP Request - Plex Session Check",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Parse AI deployment plan and Plex session data\nconst plexSessions = $('HTTP Request - Plex Session Check').first()?.json || { size: 0 };\nconst aiPlan = $input.first().json;\nconst webhookData = $('Webhook Trigger - CI/CD Push').item.json.body;\n\nlet plan = aiPlan;\nif (typeof aiPlan === 'string') {\n  try {\n    plan = JSON.parse(aiPlan);\n  } catch (e) {\n    plan = { deployment_plan: aiPlan, requires_approval: true };\n  }\n}\n\nconst activeSessions = plexSessions.size || 0;\nconst canDeploy = activeSessions === 0;\n\nreturn {\n  json: {\n    deployment: webhookData,\n    plan: plan,\n    active_sessions: activeSessions,\n    can_deploy: canDeploy,\n    requires_approval: plan.requires_approval || !canDeploy,\n    docker_command: `docker restart ${webhookData.service || 'plex'}`\n  }\n};"
+            },
+            "id": "code-deployment-decision",
+            "name": "Code - Deployment Decision",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              850,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "conditions": {
+                "boolean": [
+                  {
+                    "value1": "={{ $json.can_deploy }}",
+                    "value2": true
+                  }
+                ]
+              }
+            },
+            "id": "if-can-deploy",
+            "name": "IF - Can Deploy?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+              1050,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "command": "={{ $json.docker_command }}",
+              "options": {}
+            },
+            "id": "execute-docker-restart",
+            "name": "Execute Command - Docker Restart",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              200
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "\ud83d\udd25 Shiva DevOps - Deployment Blocked\n\nActive Plex Sessions: {{ $json.active_sessions }}\nWaiting for sessions to complete before deployment.\n\nDeployment: {{ JSON.stringify($json.deployment) }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-blocked",
+            "name": "Telegram - Deployment Blocked",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              400
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "\u2705 Shiva DevOps - Deployment Complete\n\n{{ $json.docker_command }}\n\nResult: {{ $('Execute Command - Docker Restart').first().json.stdout }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-success",
+            "name": "Telegram - Deployment Success",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1450,
+              200
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "respondWith": "text",
+              "responseBody": "={{ 'Deployment initiated: ' + JSON.stringify($json) }}"
+            },
+            "id": "webhook-response",
+            "name": "Webhook Response",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1,
+            "position": [
+              1450,
+              400
+            ]
+          }
+        ],
+        "connections": {
+          "Webhook Trigger - CI/CD Push": {
+            "main": [
+              [
+                {
+                  "node": "HTTP Request - Plex Session Check",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "HTTP Request - Plex Session Check": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Shiva DevOps",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Shiva DevOps": {
+            "main": [
+              [
+                {
+                  "node": "Code - Deployment Decision",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Deployment Decision": {
+            "main": [
+              [
+                {
+                  "node": "IF - Can Deploy?",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "IF - Can Deploy?": {
+            "main": [
+              [
+                {
+                  "node": "Execute Command - Docker Restart",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Telegram - Deployment Blocked",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Docker Restart": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Deployment Success",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Telegram - Deployment Blocked": {
+            "main": [
+              [
+                {
+                  "node": "Webhook Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Telegram - Deployment Success": {
+            "main": [
+              [
+                {
+                  "node": "Webhook Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Shiva DevOps Agent",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "saraswati-database.json",
+      "content": {
+        "name": "Saraswati Database Agent",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "rule": {
+                "interval": [
+                  {
+                    "field": "minutes",
+                    "minutesInterval": 30
+                  }
+                ]
+              }
+            },
+            "id": "schedule-trigger-saraswati",
+            "name": "Schedule Trigger - Every 30 min",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "url": "http://postgres.local:5432/health",
+              "authentication": "genericCredentialType",
+              "genericAuthType": "httpHeaderAuth",
+              "options": {
+                "allowUnauthorizedCerts": true
+              }
+            },
+            "id": "http-db-status",
+            "name": "HTTP Request - Database Status",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "command": "psql -h postgres.local -U admin -c \"SELECT COUNT(*) FROM pg_stat_activity;\" && psql -h postgres.local -U admin -c \"SELECT query, query_start FROM pg_stat_activity WHERE state = 'active' AND query_start < NOW() - INTERVAL '1 second';\"",
+              "options": {}
+            },
+            "id": "execute-db-queries",
+            "name": "Execute Command - Query Analysis",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              450,
+              450
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Combine database monitoring data\nconst dbStatus = $('HTTP Request - Database Status').first()?.json || { error: 'Database unavailable' };\nconst queryData = $('Execute Command - Query Analysis').first()?.json?.stdout || 'Query analysis failed';\n\nreturn {\n  json: {\n    timestamp: new Date().toISOString(),\n    database_status: dbStatus,\n    query_analysis: queryData,\n    summary: `Database check at ${new Date().toLocaleString()}`\n  }\n};"
+            },
+            "id": "code-combine-db-data",
+            "name": "Code - Combine Database Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              650,
+              375
+            ]
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Saraswati, the Database Administrator and Knowledge Keeper.\n\nCOSMIC ATTRIBUTES:\n- Knowledge: You guard and organize all structured data\n- Wisdom: You optimize how information flows\n- Learning: You improve performance based on patterns\n- Purity: You maintain data integrity and consistency\n\nDOMAIN EXPERTISE:\n- Relational databases (PostgreSQL, MySQL, MariaDB)\n- NoSQL databases (MongoDB, Redis)\n- Query optimization and indexing\n- Backup and recovery procedures\n- Schema design and migrations\n\nMONITORING DUTIES:\n- Database server status (running, accepting connections)\n- Query performance (slow queries >1s)\n- Connection pool usage (max connections warning)\n- Replication lag (if applicable)\n- Backup job success/failure\n- Disk space for database files\n- Lock contention and deadlocks\n\nPERFORMANCE ANALYSIS:\n1. Identify slow queries (execution time >1s)\n2. Check for missing indexes\n3. Analyze query plans (EXPLAIN)\n4. Monitor cache hit ratio (should be >90%)\n5. Detect N+1 query problems\n6. Recommend optimizations\n\nDATA INTEGRITY:\n- Verify backup completion\n- Test restore procedures monthly\n- Check foreign key constraints\n- Validate data consistency\n- Monitor for corruption\n\nCAUTIOUS APPROACH:\nDatabases require careful handling:\n- READ-ONLY queries for diagnostics\n- NEVER DELETE or UPDATE without approval\n- Backup before any schema changes\n- Test migrations in staging first\n- Escalate to Vishnu and human for schema changes, data modifications, replication failover, recovery operations\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"database_health\": \"healthy/degraded/critical\",\n  \"connection_count\": 0,\n  \"slow_queries\": [],\n  \"issues\": [],\n  \"diagnosis\": \"your analysis\",\n  \"proposed_action\": \"recommended fix\"\n}\n\nYOUR MANTRA: \"Data is truth. Queries are questions. Backups are insurance.\""
+            },
+            "id": "ai-agent-saraswati",
+            "name": "AI Agent - Saraswati Database",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              850,
+              375
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "={{ '\ud83d\udcda Saraswati Database Report\\n\\n' + JSON.stringify($json, null, 2) }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-report",
+            "name": "Telegram - Database Report",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1050,
+              375
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          }
+        ],
+        "connections": {
+          "Schedule Trigger - Every 30 min": {
+            "main": [
+              [
+                {
+                  "node": "HTTP Request - Database Status",
+                  "type": "main",
+                  "index": 0
+                },
+                {
+                  "node": "Execute Command - Query Analysis",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "HTTP Request - Database Status": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Database Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Query Analysis": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Database Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Combine Database Data": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Saraswati Database",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Saraswati Database": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Database Report",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Saraswati Database Agent",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "ganesha-security.json",
+      "content": {
+        "name": "Ganesha Security Agent",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "rule": {
+                "interval": [
+                  {
+                    "field": "minutes",
+                    "minutesInterval": 10
+                  }
+                ]
+              }
+            },
+            "id": "schedule-trigger-ganesha",
+            "name": "Schedule Trigger - Every 10 min",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "command": "tail -n 100 /var/log/auth.log | grep -i 'failed\\|failure' || echo 'No recent failures'",
+              "options": {}
+            },
+            "id": "execute-auth-logs",
+            "name": "Execute Command - Auth Logs",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              450,
+              250
+            ]
+          },
+          {
+            "parameters": {
+              "command": "fail2ban-client status sshd 2>/dev/null || echo 'Fail2ban not configured'",
+              "options": {}
+            },
+            "id": "execute-fail2ban",
+            "name": "Execute Command - Fail2ban Status",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              450,
+              350
+            ]
+          },
+          {
+            "parameters": {
+              "command": "certbot certificates 2>/dev/null | grep -E 'Expiry|Domains' || echo 'No certificates found'",
+              "options": {}
+            },
+            "id": "execute-cert-check",
+            "name": "Execute Command - Certificate Check",
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+              450,
+              450
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Combine security monitoring data\nconst authLogs = $('Execute Command - Auth Logs').first()?.json?.stdout || 'No auth logs';\nconst fail2banStatus = $('Execute Command - Fail2ban Status').first()?.json?.stdout || 'Fail2ban unavailable';\nconst certStatus = $('Execute Command - Certificate Check').first()?.json?.stdout || 'No certificates';\n\nreturn {\n  json: {\n    timestamp: new Date().toISOString(),\n    auth_logs: authLogs,\n    fail2ban_status: fail2banStatus,\n    certificate_status: certStatus,\n    summary: `Security check at ${new Date().toLocaleString()}`\n  }\n};"
+            },
+            "id": "code-combine-security-data",
+            "name": "Code - Combine Security Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              650,
+              350
+            ]
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Ganesha, the Security Engineer and Obstacle Remover.\n\nCOSMIC ATTRIBUTES:\n- Guardian: You protect the infrastructure from threats\n- Wisdom: You distinguish real threats from false alarms\n- Problem-Solving: You remove security obstacles (misconfigurations, lockouts)\n- Balance: You maintain security without impeding legitimate use\n\nDOMAIN EXPERTISE:\n- Firewall management (iptables, ufw, pfSense)\n- Access control (SSH keys, VPN, authentication)\n- SSL/TLS certificates (Let's Encrypt, renewal)\n- Security monitoring (logs, failed attempts)\n- Intrusion prevention (Fail2ban, Crowdsec)\n\nSECURITY MONITORING:\n- Failed SSH login attempts (>5 in 10 min = suspicious)\n- Firewall blocks and denies\n- Certificate expiration (alert 30 days before)\n- Unusual port scans or probing\n- Service authentication failures\n- VPN connections and disconnects\n\nTHREAT ASSESSMENT:\n1. Failed Logins:\n   - <10/hour: Normal (typos, forgotten passwords)\n   - >50/hour: Possible brute force attack\n   - >200/hour: Active attack, block source\n\n2. Port Scans:\n   - Sequential ports from single IP: Likely scan\n   - Random ports, multiple IPs: Background internet noise\n\n3. Firewall Blocks:\n   - Repeated blocks from known services: Misconfiguration\n   - Blocks from unknown IPs: Normal defense\n\nSECURITY ACTIONS (with approval):\n- Block IP addresses (temporary or permanent)\n- Modify firewall rules\n- Renew certificates\n- Update Fail2ban filters\n- Adjust authentication settings\n\nSECURITY INCIDENTS:\nImmediate notification for:\n- Successful unauthorized access\n- Certificate expiration <7 days\n- Brute force attacks (>100 attempts/hour)\n- New ports exposed to internet\n- Firewall disabled or misconfigured\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"security_status\": \"secure/warning/critical\",\n  \"failed_logins\": 0,\n  \"certificates_expiring\": [],\n  \"blocked_ips\": [],\n  \"issues\": [],\n  \"diagnosis\": \"your analysis\",\n  \"proposed_action\": \"recommended fix\"\n}\n\nYOUR MANTRA: \"Vigilant but fair. Secure but accessible. Protected but not paranoid.\""
+            },
+            "id": "ai-agent-ganesha",
+            "name": "AI Agent - Ganesha Security",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              850,
+              350
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+              "text": "={{ '\ud83d\udee1\ufe0f Ganesha Security Report\\n\\n' + JSON.stringify($json, null, 2) }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-report",
+            "name": "Telegram - Security Report",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1050,
+              350
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          }
+        ],
+        "connections": {
+          "Schedule Trigger - Every 10 min": {
+            "main": [
+              [
+                {
+                  "node": "Execute Command - Auth Logs",
+                  "type": "main",
+                  "index": 0
+                },
+                {
+                  "node": "Execute Command - Fail2ban Status",
+                  "type": "main",
+                  "index": 0
+                },
+                {
+                  "node": "Execute Command - Certificate Check",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Auth Logs": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Security Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Fail2ban Status": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Security Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Command - Certificate Check": {
+            "main": [
+              [
+                {
+                  "node": "Code - Combine Security Data",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Combine Security Data": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Ganesha Security",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Ganesha Security": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Security Report",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Ganesha Security Agent",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "hanuman-helpdesk.json",
+      "content": {
+        "name": "Hanuman Helpdesk Agent",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "updates": [
+                "message"
+              ]
+            },
+            "id": "telegram-trigger-hanuman",
+            "name": "Telegram Trigger - User Requests",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ],
+            "webhookId": "hanuman-helpdesk",
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "jsCode": "// Parse user request from Telegram message\nconst message = $input.first().json.message;\nconst text = (message.text || '').trim();\nconst userId = message.from.id;\nconst chatId = message.chat.id;\nconst userName = message.from.first_name || 'User';\n\n// Simple categorization based on keywords\nlet category = 'general';\nlet urgency = 'low';\n\nconst textLower = text.toLowerCase();\n\nif (textLower.includes('down') || textLower.includes('not working') || textLower.includes('offline')) {\n  category = 'service_down';\n  urgency = 'high';\n} else if (textLower.includes('slow') || textLower.includes('performance')) {\n  category = 'performance';\n  urgency = 'medium';\n} else if (textLower.includes('network') || textLower.includes('wifi') || textLower.includes('connection')) {\n  category = 'network';\n  urgency = 'medium';\n} else if (textLower.includes('database') || textLower.includes('data')) {\n  category = 'database';\n  urgency = 'medium';\n} else if (textLower.includes('security') || textLower.includes('login') || textLower.includes('password')) {\n  category = 'security';\n  urgency = 'medium';\n} else if (textLower.includes('deploy') || textLower.includes('update')) {\n  category = 'deployment';\n  urgency = 'low';\n}\n\nreturn {\n  json: {\n    request: text,\n    user_name: userName,\n    user_id: userId,\n    chat_id: chatId,\n    category: category,\n    urgency: urgency,\n    timestamp: new Date().toISOString()\n  }\n};"
+            },
+            "id": "code-parse-request",
+            "name": "Code - Parse User Request",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "model": "gpt-4o-mini",
+              "options": {
+                "temperature": 0.7
+              },
+              "systemMessage": "You are Hanuman, the Helpdesk Agent and Devoted Servant.\n\nCOSMIC ATTRIBUTES:\n- Service: You serve users with dedication and enthusiasm\n- Strength: You handle high volumes of requests\n- Problem-Solving: You resolve common issues quickly\n- Loyalty: You ensure every request receives attention\n\nROLE:\nYou are the first point of contact for all user requests and issues.\nYour goal is to solve problems quickly or route to the right specialist.\n\nCAPABILITIES:\n- Answer common questions (service status, how-to guides)\n- Reset passwords and unlock accounts (with approval)\n- Provide service status and uptime information\n- Search knowledge base for solutions\n- Guide users through basic troubleshooting\n- Route complex issues to specialist agents\n\nTRIAGE PROCESS:\nWhen a request comes in:\n1. Categorize the issue:\n   - Network: Slow internet, can't connect \u2192 Brahma (Network)\n   - Service Down: App not working \u2192 Vishnu or Brahma (Compute)\n   - Database: Data missing, slow queries \u2192 Saraswati\n   - Security: Can't login, locked out \u2192 Ganesha\n   - Deployment: Need update, feature request \u2192 Shiva\n   - General: Status, info \u2192 Handle yourself\n\n2. Assess urgency:\n   - CRITICAL: Service completely down, multiple users affected\n   - HIGH: Single user blocked, urgent business need\n   - MEDIUM: Degraded performance, workarounds available\n   - LOW: Questions, feature requests, nice-to-have\n\n3. Take action:\n   - Simple: Solve immediately (status checks, info)\n   - Moderate: Use tools (check logs, restart container with approval)\n   - Complex: Escalate to specialist or Vishnu\n\nCOMMUNICATION STYLE:\n- Friendly and approachable\n- Clear and concise\n- Empathetic to user frustration\n- Professional but warm\n- Set expectations (timeframes, limitations)\n\nESCALATION:\nAlways escalate when:\n- Outside your expertise\n- Requires privileged access\n- Affects multiple users\n- Security-sensitive\n- User is frustrated after 2 attempts\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"response_type\": \"direct_answer/escalation/troubleshooting\",\n  \"message\": \"your friendly response to user\",\n  \"escalate_to\": \"agent-name or null\",\n  \"follow_up_needed\": true/false\n}\n\nYOUR MANTRA: \"Every user matters. Every issue resolved. Service with a smile.\""
+            },
+            "id": "ai-agent-hanuman",
+            "name": "AI Agent - Hanuman Helpdesk",
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 1,
+            "position": [
+              650,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "jsCode": "// Parse Hanuman AI response\nconst aiResponse = $input.first().json;\nconst requestData = $('Code - Parse User Request').item.json;\n\nlet response = aiResponse;\nif (typeof aiResponse === 'string') {\n  try {\n    response = JSON.parse(aiResponse);\n  } catch (e) {\n    response = { \n      message: aiResponse,\n      response_type: 'direct_answer',\n      escalate_to: null \n    };\n  }\n}\n\nreturn {\n  json: {\n    chat_id: requestData.chat_id,\n    user_name: requestData.user_name,\n    response_message: response.message || 'Processing your request...',\n    should_escalate: response.escalate_to !== null && response.escalate_to !== undefined,\n    escalate_to: response.escalate_to,\n    response_type: response.response_type || 'direct_answer'\n  }\n};"
+            },
+            "id": "code-process-response",
+            "name": "Code - Process Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              850,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "conditions": {
+                "boolean": [
+                  {
+                    "value1": "={{ $json.should_escalate }}",
+                    "value2": true
+                  }
+                ]
+              }
+            },
+            "id": "if-escalate",
+            "name": "IF - Should Escalate?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+              1050,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{ $json.chat_id }}",
+              "text": "\ud83d\udc4b Hi {{ $json.user_name }}!\n\n{{ $json.response_message }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-direct-response",
+            "name": "Telegram - Direct Response",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              200
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "chatId": "={{ $json.chat_id }}",
+              "text": "\ud83d\udc4b Hi {{ $json.user_name }}!\n\n{{ $json.response_message }}\n\n\ud83d\udd04 I'm escalating this to {{ $json.escalate_to }} for expert assistance. You'll receive an update soon!",
+              "additionalFields": {}
+            },
+            "id": "telegram-escalation",
+            "name": "Telegram - Escalation Notice",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1250,
+              400
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "workflowId": "vishnu-cto",
+              "options": {}
+            },
+            "id": "execute-escalation",
+            "name": "Execute Workflow - Escalate to Vishnu",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+              1450,
+              400
+            ]
+          }
+        ],
+        "connections": {
+          "Telegram Trigger - User Requests": {
+            "main": [
+              [
+                {
+                  "node": "Code - Parse User Request",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Parse User Request": {
+            "main": [
+              [
+                {
+                  "node": "AI Agent - Hanuman Helpdesk",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "AI Agent - Hanuman Helpdesk": {
+            "main": [
+              [
+                {
+                  "node": "Code - Process Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Process Response": {
+            "main": [
+              [
+                {
+                  "node": "IF - Should Escalate?",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "IF - Should Escalate?": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Escalation Notice",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Telegram - Direct Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Telegram - Escalation Notice": {
+            "main": [
+              [
+                {
+                  "node": "Execute Workflow - Escalate to Vishnu",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Workflow for the Hanuman Helpdesk Agent",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    },
+    {
+      "name": "approval-handler.json",
+      "content": {
+        "name": "Approval Handler - Human-in-the-Loop",
+        "version": "1.0",
+        "nodes": [
+          {
+            "parameters": {
+              "updates": [
+                "message"
+              ]
+            },
+            "id": "telegram-trigger",
+            "name": "Telegram Trigger - On Message",
+            "type": "n8n-nodes-base.telegramTrigger",
+            "typeVersion": 1,
+            "position": [
+              250,
+              300
+            ],
+            "webhookId": "approval-handler-telegram",
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "jsCode": "// Parse user response from Telegram message\nconst message = $input.first().json.message;\nconst text = (message.text || '').trim().toUpperCase();\nconst userId = message.from.id;\nconst chatId = message.chat.id;\n\n// Extract approval ID if present (e.g., \"YES APR-123\")\nconst parts = text.split(' ');\nconst response = parts[0]; // YES, NO, EXPLAIN\nconst approvalId = parts[1] || 'unknown';\n\nreturn {\n  json: {\n    response: response,\n    approval_id: approvalId,\n    user_id: userId,\n    chat_id: chatId,\n    timestamp: new Date().toISOString(),\n    is_yes: response === 'YES',\n    is_no: response === 'NO',\n    is_explain: response === 'EXPLAIN',\n    original_message: text\n  }\n};"
+            },
+            "id": "code-parse-response",
+            "name": "Code - Parse User Response",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              450,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{ $json.response }}",
+                    "operation": "equals",
+                    "value2": "YES"
+                  }
+                ]
+              }
+            },
+            "id": "switch-response",
+            "name": "Switch - YES/NO/Other",
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3,
+            "position": [
+              650,
+              300
+            ]
+          },
+          {
+            "parameters": {
+              "workflowId": "vishnu-cto",
+              "options": {}
+            },
+            "id": "execute-approved-action",
+            "name": "Execute Workflow - Run Approved Fix",
+            "type": "n8n-nodes-base.executeWorkflow",
+            "typeVersion": 1,
+            "position": [
+              850,
+              200
+            ]
+          },
+          {
+            "parameters": {
+              "chatId": "={{ $json.chat_id }}",
+              "text": "\u2705 Approval Confirmed\n\nApproval ID: {{ $json.approval_id }}\nExecuting approved action...\n\nResult: {{ $('Execute Workflow - Run Approved Fix').first().json }}",
+              "additionalFields": {}
+            },
+            "id": "telegram-confirm-yes",
+            "name": "Telegram - Confirm Execution",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              1050,
+              200
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "chatId": "={{ $json.chat_id }}",
+              "text": "\u274c Approval Denied\n\nApproval ID: {{ $json.approval_id }}\nNo action will be taken. The system will continue monitoring.\n\nYou can manually intervene if needed.",
+              "additionalFields": {}
+            },
+            "id": "telegram-confirm-no",
+            "name": "Telegram - Confirm Denial",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              850,
+              300
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          },
+          {
+            "parameters": {
+              "chatId": "={{ $json.chat_id }}",
+              "text": "\u2139\ufe0f Additional Information\n\nApproval ID: {{ $json.approval_id }}\n\nPlease reply with:\n- YES {{ $json.approval_id }} to approve\n- NO {{ $json.approval_id }} to decline\n\nFor specific questions, please ask and I'll provide details.",
+              "additionalFields": {}
+            },
+            "id": "telegram-other-response",
+            "name": "Telegram - Other Response",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+              850,
+              400
+            ],
+            "credentials": {
+              "telegramApi": {
+                "id": "1",
+                "name": "Telegram API"
+              }
+            }
+          }
+        ],
+        "connections": {
+          "Telegram Trigger - On Message": {
+            "main": [
+              [
+                {
+                  "node": "Code - Parse User Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Code - Parse User Response": {
+            "main": [
+              [
+                {
+                  "node": "Switch - YES/NO/Other",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Switch - YES/NO/Other": {
+            "main": [
+              [
+                {
+                  "node": "Execute Workflow - Run Approved Fix",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Telegram - Confirm Denial",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Telegram - Other Response",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Execute Workflow - Run Approved Fix": {
+            "main": [
+              [
+                {
+                  "node": "Telegram - Confirm Execution",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "active": false,
+        "settings": {},
+        "tags": [],
+        "meta": {
+          "description": "Sub-workflow for Human-in-the-Loop Approval Logic",
+          "templateCredsSetupCompleted": true
+        }
+      }
+    }
+  ]
+}

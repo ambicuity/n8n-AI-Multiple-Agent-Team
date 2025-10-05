@@ -1,7 +1,155 @@
 {
   "name": "Brahma Network Agent",
-  "nodes": [],
-  "connections": {},
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-brahma",
+      "name": "Schedule Trigger - Every 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7
+        },
+        "systemMessage": "You are Brahma, the Network Creator and Administrator.\n\nCOSMIC ATTRIBUTES:\n- Creation: You build and maintain network infrastructure\n- Architecture: You design network topology and segments\n- Connectivity: You ensure all devices can communicate\n\nDOMAIN EXPERTISE:\n- UniFi Controller (access points, switches, gateways)\n- Network protocols (TCP/IP, DHCP, DNS, VLANs)\n- Bandwidth management and QoS\n- Wireless optimization (channels, power, roaming)\n\nMONITORING DUTIES:\n- Connected client count and identification\n- Access point health and performance\n- Bandwidth utilization per client/VLAN\n- Network events (connects, disconnects, roaming)\n- Interference and signal strength\n\nISSUE CATEGORIES:\n1. Connectivity: Devices can't connect or internet down\n2. Performance: Slow speeds, high latency\n3. Coverage: Weak signal in certain areas\n4. Capacity: Too many clients, bandwidth saturation\n\nTROUBLESHOOTING PROCESS:\n1. Check WAN connectivity (internet uplink)\n2. Verify AP status (all online?)\n3. Check client associations (which AP, signal strength)\n4. Analyze bandwidth (saturated links?)\n5. Review events (recent changes, disconnects)\n6. Propose solution or escalate to Vishnu\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"network_health\": \"healthy/degraded/critical\",\n  \"unifi_status\": \"online/offline\",\n  \"connected_clients\": 0,\n  \"issues\": [],\n  \"diagnosis\": \"your analysis\",\n  \"proposed_action\": \"recommended fix\"\n}\n\nYOUR MANTRA: \"Strong connections, optimal routing, seamless roaming.\""
+      },
+      "id": "ai-agent-brahma",
+      "name": "AI Agent - Brahma Network",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://unifi.local:8443/api/stat/health",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-unifi-status",
+      "name": "HTTP Request - UniFi Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "command": "ping -c 4 8.8.8.8 && traceroute -m 10 8.8.8.8",
+        "options": {}
+      },
+      "id": "execute-net-diagnostics",
+      "name": "Execute Command - Net Diagnostics",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine network diagnostics data\nconst unifiData = $('HTTP Request - UniFi Status').first()?.json || { error: 'UniFi unavailable' };\nconst pingData = $('Execute Command - Net Diagnostics').first()?.json?.stdout || 'Diagnostics failed';\n\nreturn {\n  json: {\n    timestamp: new Date().toISOString(),\n    unifi_health: unifiData,\n    network_diagnostics: pingData,\n    summary: `Network check at ${new Date().toLocaleString()}`\n  }\n};"
+      },
+      "id": "code-combine-data",
+      "name": "Code - Combine Network Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 450]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "={{ '🌐 Brahma Network Report\\n\\n' + JSON.stringify($json, null, 2) }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-report",
+      "name": "Telegram - Network Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Every 15 min": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - UniFi Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Command - Net Diagnostics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - UniFi Status": {
+      "main": [
+        [
+          {
+            "node": "Code - Combine Network Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command - Net Diagnostics": {
+      "main": [
+        [
+          {
+            "node": "Code - Combine Network Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Combine Network Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Brahma Network",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Brahma Network": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Network Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
   "settings": {},
   "tags": [],

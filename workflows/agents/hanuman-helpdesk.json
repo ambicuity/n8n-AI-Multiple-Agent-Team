@@ -1,0 +1,205 @@
+{
+  "name": "Hanuman Helpdesk Agent",
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ]
+      },
+      "id": "telegram-trigger-hanuman",
+      "name": "Telegram Trigger - User Requests",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "hanuman-helpdesk",
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse user request from Telegram message\nconst message = $input.first().json.message;\nconst text = (message.text || '').trim();\nconst userId = message.from.id;\nconst chatId = message.chat.id;\nconst userName = message.from.first_name || 'User';\n\n// Simple categorization based on keywords\nlet category = 'general';\nlet urgency = 'low';\n\nconst textLower = text.toLowerCase();\n\nif (textLower.includes('down') || textLower.includes('not working') || textLower.includes('offline')) {\n  category = 'service_down';\n  urgency = 'high';\n} else if (textLower.includes('slow') || textLower.includes('performance')) {\n  category = 'performance';\n  urgency = 'medium';\n} else if (textLower.includes('network') || textLower.includes('wifi') || textLower.includes('connection')) {\n  category = 'network';\n  urgency = 'medium';\n} else if (textLower.includes('database') || textLower.includes('data')) {\n  category = 'database';\n  urgency = 'medium';\n} else if (textLower.includes('security') || textLower.includes('login') || textLower.includes('password')) {\n  category = 'security';\n  urgency = 'medium';\n} else if (textLower.includes('deploy') || textLower.includes('update')) {\n  category = 'deployment';\n  urgency = 'low';\n}\n\nreturn {\n  json: {\n    request: text,\n    user_name: userName,\n    user_id: userId,\n    chat_id: chatId,\n    category: category,\n    urgency: urgency,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "code-parse-request",
+      "name": "Code - Parse User Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7
+        },
+        "systemMessage": "You are Hanuman, the Helpdesk Agent and Devoted Servant.\n\nCOSMIC ATTRIBUTES:\n- Service: You serve users with dedication and enthusiasm\n- Strength: You handle high volumes of requests\n- Problem-Solving: You resolve common issues quickly\n- Loyalty: You ensure every request receives attention\n\nROLE:\nYou are the first point of contact for all user requests and issues.\nYour goal is to solve problems quickly or route to the right specialist.\n\nCAPABILITIES:\n- Answer common questions (service status, how-to guides)\n- Reset passwords and unlock accounts (with approval)\n- Provide service status and uptime information\n- Search knowledge base for solutions\n- Guide users through basic troubleshooting\n- Route complex issues to specialist agents\n\nTRIAGE PROCESS:\nWhen a request comes in:\n1. Categorize the issue:\n   - Network: Slow internet, can't connect → Brahma (Network)\n   - Service Down: App not working → Vishnu or Brahma (Compute)\n   - Database: Data missing, slow queries → Saraswati\n   - Security: Can't login, locked out → Ganesha\n   - Deployment: Need update, feature request → Shiva\n   - General: Status, info → Handle yourself\n\n2. Assess urgency:\n   - CRITICAL: Service completely down, multiple users affected\n   - HIGH: Single user blocked, urgent business need\n   - MEDIUM: Degraded performance, workarounds available\n   - LOW: Questions, feature requests, nice-to-have\n\n3. Take action:\n   - Simple: Solve immediately (status checks, info)\n   - Moderate: Use tools (check logs, restart container with approval)\n   - Complex: Escalate to specialist or Vishnu\n\nCOMMUNICATION STYLE:\n- Friendly and approachable\n- Clear and concise\n- Empathetic to user frustration\n- Professional but warm\n- Set expectations (timeframes, limitations)\n\nESCALATION:\nAlways escalate when:\n- Outside your expertise\n- Requires privileged access\n- Affects multiple users\n- Security-sensitive\n- User is frustrated after 2 attempts\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"response_type\": \"direct_answer/escalation/troubleshooting\",\n  \"message\": \"your friendly response to user\",\n  \"escalate_to\": \"agent-name or null\",\n  \"follow_up_needed\": true/false\n}\n\nYOUR MANTRA: \"Every user matters. Every issue resolved. Service with a smile.\""
+      },
+      "id": "ai-agent-hanuman",
+      "name": "AI Agent - Hanuman Helpdesk",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Hanuman AI response\nconst aiResponse = $input.first().json;\nconst requestData = $('Code - Parse User Request').item.json;\n\nlet response = aiResponse;\nif (typeof aiResponse === 'string') {\n  try {\n    response = JSON.parse(aiResponse);\n  } catch (e) {\n    response = { \n      message: aiResponse,\n      response_type: 'direct_answer',\n      escalate_to: null \n    };\n  }\n}\n\nreturn {\n  json: {\n    chat_id: requestData.chat_id,\n    user_name: requestData.user_name,\n    response_message: response.message || 'Processing your request...',\n    should_escalate: response.escalate_to !== null && response.escalate_to !== undefined,\n    escalate_to: response.escalate_to,\n    response_type: response.response_type || 'direct_answer'\n  }\n};"
+      },
+      "id": "code-process-response",
+      "name": "Code - Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.should_escalate }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-escalate",
+      "name": "IF - Should Escalate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "👋 Hi {{ $json.user_name }}!\n\n{{ $json.response_message }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-direct-response",
+      "name": "Telegram - Direct Response",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "👋 Hi {{ $json.user_name }}!\n\n{{ $json.response_message }}\n\n🔄 I'm escalating this to {{ $json.escalate_to }} for expert assistance. You'll receive an update soon!",
+        "additionalFields": {}
+      },
+      "id": "telegram-escalation",
+      "name": "Telegram - Escalation Notice",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": "vishnu-cto",
+        "options": {}
+      },
+      "id": "execute-escalation",
+      "name": "Execute Workflow - Escalate to Vishnu",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger - User Requests": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse User Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse User Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Hanuman Helpdesk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Hanuman Helpdesk": {
+      "main": [
+        [
+          {
+            "node": "Code - Process Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Process Response": {
+      "main": [
+        [
+          {
+            "node": "IF - Should Escalate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Should Escalate?": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Escalation Notice",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram - Direct Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Escalation Notice": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow - Escalate to Vishnu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": [],
+  "meta": {
+    "description": "Workflow for the Hanuman Helpdesk Agent",
+    "templateCredsSetupCompleted": true
+  }
+}

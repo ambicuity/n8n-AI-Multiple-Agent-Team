@@ -1,0 +1,160 @@
+{
+  "name": "Saraswati Database Agent",
+  "version": "1.0",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger-saraswati",
+      "name": "Schedule Trigger - Every 30 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://postgres.local:5432/health",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-db-status",
+      "name": "HTTP Request - Database Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "command": "psql -h postgres.local -U admin -c \"SELECT COUNT(*) FROM pg_stat_activity;\" && psql -h postgres.local -U admin -c \"SELECT query, query_start FROM pg_stat_activity WHERE state = 'active' AND query_start < NOW() - INTERVAL '1 second';\"",
+        "options": {}
+      },
+      "id": "execute-db-queries",
+      "name": "Execute Command - Query Analysis",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 450]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine database monitoring data\nconst dbStatus = $('HTTP Request - Database Status').first()?.json || { error: 'Database unavailable' };\nconst queryData = $('Execute Command - Query Analysis').first()?.json?.stdout || 'Query analysis failed';\n\nreturn {\n  json: {\n    timestamp: new Date().toISOString(),\n    database_status: dbStatus,\n    query_analysis: queryData,\n    summary: `Database check at ${new Date().toLocaleString()}`\n  }\n};"
+      },
+      "id": "code-combine-db-data",
+      "name": "Code - Combine Database Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 375]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "options": {
+          "temperature": 0.7
+        },
+        "systemMessage": "You are Saraswati, the Database Administrator and Knowledge Keeper.\n\nCOSMIC ATTRIBUTES:\n- Knowledge: You guard and organize all structured data\n- Wisdom: You optimize how information flows\n- Learning: You improve performance based on patterns\n- Purity: You maintain data integrity and consistency\n\nDOMAIN EXPERTISE:\n- Relational databases (PostgreSQL, MySQL, MariaDB)\n- NoSQL databases (MongoDB, Redis)\n- Query optimization and indexing\n- Backup and recovery procedures\n- Schema design and migrations\n\nMONITORING DUTIES:\n- Database server status (running, accepting connections)\n- Query performance (slow queries >1s)\n- Connection pool usage (max connections warning)\n- Replication lag (if applicable)\n- Backup job success/failure\n- Disk space for database files\n- Lock contention and deadlocks\n\nPERFORMANCE ANALYSIS:\n1. Identify slow queries (execution time >1s)\n2. Check for missing indexes\n3. Analyze query plans (EXPLAIN)\n4. Monitor cache hit ratio (should be >90%)\n5. Detect N+1 query problems\n6. Recommend optimizations\n\nDATA INTEGRITY:\n- Verify backup completion\n- Test restore procedures monthly\n- Check foreign key constraints\n- Validate data consistency\n- Monitor for corruption\n\nCAUTIOUS APPROACH:\nDatabases require careful handling:\n- READ-ONLY queries for diagnostics\n- NEVER DELETE or UPDATE without approval\n- Backup before any schema changes\n- Test migrations in staging first\n- Escalate to Vishnu and human for schema changes, data modifications, replication failover, recovery operations\n\nOUTPUT FORMAT:\nRespond with JSON:\n{\n  \"database_health\": \"healthy/degraded/critical\",\n  \"connection_count\": 0,\n  \"slow_queries\": [],\n  \"issues\": [],\n  \"diagnosis\": \"your analysis\",\n  \"proposed_action\": \"recommended fix\"\n}\n\nYOUR MANTRA: \"Data is truth. Queries are questions. Backups are insurance.\""
+      },
+      "id": "ai-agent-saraswati",
+      "name": "AI Agent - Saraswati Database",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [850, 375]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "={{ '📚 Saraswati Database Report\\n\\n' + JSON.stringify($json, null, 2) }}",
+        "additionalFields": {}
+      },
+      "id": "telegram-report",
+      "name": "Telegram - Database Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1050, 375],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Every 30 min": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Database Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute Command - Query Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Database Status": {
+      "main": [
+        [
+          {
+            "node": "Code - Combine Database Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command - Query Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code - Combine Database Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Combine Database Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Saraswati Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Saraswati Database": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Database Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "tags": [],
+  "meta": {
+    "description": "Workflow for the Saraswati Database Agent",
+    "templateCredsSetupCompleted": true
+  }
+}
